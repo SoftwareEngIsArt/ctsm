@@ -13,15 +13,15 @@ namespace ctsm::detail
 
 	template<auto>
 	struct state_func_impl : std::false_type {};
-	template<typename R, typename... Args, R (*S)(Args...)>
-	struct state_func_impl<S> : std::is_same<R, state_t> {};
+	template<typename... Args, state_t (*S)(Args...)>
+	struct state_func_impl<S> : std::true_type {};
 	template<auto State>
 	concept state_func = state_func_impl<State>::value;
 
 	/** @brief Type used to uniquely identify a state. */
 	class state_t
 	{
-		using dummy_t = uint8_t;
+		using dummy_t = uint8_t; /* Type does not matter, uint8_t used to avoid wasting memory. */
 
 		template<auto>
 		friend
@@ -33,7 +33,7 @@ namespace ctsm::detail
 		template<auto State> requires state_func<State>
 		class generator
 		{
-			constinit static const dummy_t dummy; /* Type does not matter, uint8_t used to avoid wasting a lot of memory. */
+			constinit static const dummy_t dummy;
 
 		public:
 			/** Returns an instance of `state_t` for the specific state. */

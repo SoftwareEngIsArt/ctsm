@@ -13,11 +13,11 @@ struct my_data; // Data passed to the states
 
 // States of the behavior
 ctsm::state_t initial(my_data &);
-ctsm::state_t intermediate(my_data &);
-ctsm::state_t final(const my_data &);
+ctsm::state_t intermediate_1(my_data &);
+ctsm::state_t intermediate_2(const my_data &);
 
 // Behavior type
-using my_behavior = ctsm::behavior<initial, intermediate, final>;
+using my_behavior = ctsm::behavior<initial, intermediate_1, intermediate_2>;
 ```
 
 Note that a state function must always return `ctsm::state_t`.
@@ -41,7 +41,7 @@ The default constructor will always select the first state from the template pac
 initial state, the parametrized constructor `ctsm::behavior(ctsm::state_t)` must be used.
 
 ```cpp
-auto final_behavior = my_behavior(ctsm::state<final>);
+auto other_behavior = my_behavior(ctsm::state<intermediate_1>);
 ```
 
 To execute a state, simply invoke the behavior instance with the arguments that should be passed to the state function.

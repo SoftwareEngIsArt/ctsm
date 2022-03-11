@@ -5,7 +5,6 @@
 #pragma once
 
 #include <type_traits>
-#include <cstdint>
 
 namespace ctsm::detail
 {
@@ -21,7 +20,7 @@ namespace ctsm::detail
 	/** @brief Type used to uniquely identify a state. */
 	class state_t
 	{
-		using dummy_t = uint8_t; /* Type does not matter, uint8_t used to avoid wasting memory. */
+		using dummy_t = char; /* Type does not matter, char used to avoid wasting memory. */
 
 		constexpr explicit state_t(const dummy_t &dummy) noexcept : id_dummy(&dummy) {}
 
@@ -47,7 +46,7 @@ namespace ctsm::detail
 	};
 
 	template<auto S> requires state_func<S>
-	constinit const uint8_t state_t::generator<S>::dummy = {};
+	constinit const state_t::dummy_t state_t::generator<S>::dummy = {};
 
 	/** @brief Variable used to generate state identifier. */
 	template<auto S> requires state_func<S>

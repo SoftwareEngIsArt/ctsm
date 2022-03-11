@@ -52,8 +52,9 @@ my_data data;
 behavior(data);
 ```
 
-Note that if a state function returns an unrecognized state (that is, state which is not part of this behavior), an
-instance of `ctsm::bad_state_exception` will be thrown.
+Note that if a state function returns an unrecognized state (that is, state which is not part of this behavior) or if
+the current state of the behavior cannot be invoked with the passed arguments, an instance
+of `ctsm::bad_state_exception` will be thrown.
 
 The invocation operator (`operator()`) of `ctsm::behavior` returns an instance of `ctsm::state_t` indicating which state
 will be executed on next call to `operator()` (the current state). The current state of `ctsm::behavior` can also be

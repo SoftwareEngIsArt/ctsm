@@ -46,7 +46,8 @@ namespace ctsm::detail
 		 * @param args Arguments passed to the state.
 		 * @return The next state to be executed.
 		 * @note All states must be invocable with the passed arguments.
-		 * @throw bad_state_exception In case a state function returned unrecognized `state_t` value. */
+		 * @throw bad_state_exception In case a state function returned unrecognized `state_t` value
+		 * or the current state cannot be invoked with `args`. */
 		template<typename... Args>
 		constexpr state_t operator()(Args &&...args)
 		{
@@ -57,13 +58,17 @@ namespace ctsm::detail
 
 	private:
 		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>
-		constexpr state_t invoke_state(Args &&...args) const requires (requires{ S(std::forward<Args>(args)...); })
+		constexpr state_t invoke_state(Args &&...args) const
 		{
-			/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.
-			 * Runtime index generation cannot solve this since switch cases require constant expressions. */
-			if (detail::state<S> == next_state)
-				return S(std::forward<Args>(args)...);
-			else if constexpr(I + 1 < sizeof...(States))
+			if constexpr(requires{ S(std::forward<Args>(args)...); })
+			{
+				/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.
+				 * Runtime index generation cannot solve this since switch cases require constant expressions. */
+				if (detail::state<S> == next_state) [[likely]]
+					return S(std::forward<Args>(args)...);
+			}
+
+			if constexpr(I + 1 < sizeof...(States))
 				return invoke_state<I + 1>(std::forward<Args>(args)...);
 			else
 				throw bad_state_exception();

@@ -35,8 +35,6 @@ namespace ctsm::detail
 			else
 				return get_state<I, J + 1, Rest...>();
 		}
-		template<size_t I>
-		constexpr static auto get_state() noexcept { return get_state<I, 0, States...>(); }
 
 	public:
 		/** Initializes the behavior with the default (first parameter of the pack) state. */
@@ -58,7 +56,7 @@ namespace ctsm::detail
 		[[nodiscard]] constexpr state_t state() const noexcept { return next_state; }
 
 	private:
-		template<size_t I = 0, auto S = get_state<I>(), typename... Args>
+		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>
 		constexpr state_t invoke_state(Args &&...args) const requires (requires{ S(std::forward<Args>(args)...); })
 		{
 			/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.

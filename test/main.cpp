@@ -12,17 +12,27 @@ int main(int argc, char **argv)
 	return RUN_ALL_TESTS();
 }
 
-ctsm::state_t test_state_1(bool b);
-ctsm::state_t test_state_2(bool &b);
+struct state_data
+{
+	bool next = false;
+	int ctr = 0;
+};
 
-ctsm::state_t test_state_1(bool b)
+constexpr ctsm::state_t test_state_1(state_data &);
+constexpr ctsm::state_t test_state_2(state_data &);
+
+template
+class ctsm::state_t::generator<test_state_1>;
+
+constexpr ctsm::state_t test_state_1(state_data &d)
 {
-	return b ? ctsm::state<test_state_2> : ctsm::state<test_state_1>;
+	d.ctr++;
+	return d.next ? ctsm::state<test_state_2> : ctsm::state<test_state_1>;
 }
-ctsm::state_t test_state_2(bool &b)
+constexpr ctsm::state_t test_state_2(state_data &d)
 {
-	b = !b;
-	return !b ? ctsm::state<test_state_1> : ctsm::state<test_state_2>;
+	d.next = !d.next;
+	return !d.next ? ctsm::state<test_state_1> : ctsm::state<test_state_2>;
 }
 
 TEST(ctsm_tests, behavior_test)
@@ -35,14 +45,18 @@ TEST(ctsm_tests, behavior_test)
 	static_assert(std::is_move_constructible_v<test_behavior>);
 	static_assert(std::is_move_assignable_v<test_behavior>);
 	static_assert(std::is_trivially_copyable_v<test_behavior>);
+	static_assert(std::is_trivially_destructible_v<test_behavior>);
 
 	auto behavior = test_behavior{ctsm::state<test_state_2>};
 	EXPECT_EQ(behavior.state(), ctsm::state<test_state_2>);
 
-	bool switch_state = false;
-	EXPECT_EQ(behavior(switch_state), ctsm::state<test_state_2>);
-	EXPECT_TRUE(switch_state);
-	EXPECT_EQ(behavior(switch_state), ctsm::state<test_state_1>);
-	EXPECT_FALSE(switch_state);
-	EXPECT_EQ(behavior(switch_state), ctsm::state<test_state_1>);
+	state_data data = {};
+	EXPECT_EQ(behavior(data), ctsm::state<test_state_2>);
+	EXPECT_TRUE(data.next);
+	EXPECT_EQ(data.ctr, 0);
+	EXPECT_EQ(behavior(data), ctsm::state<test_state_1>);
+	EXPECT_FALSE(data.next);
+	EXPECT_EQ(data.ctr, 0);
+	EXPECT_EQ(behavior(data), ctsm::state<test_state_1>);
+	EXPECT_EQ(data.ctr, 1);
 }

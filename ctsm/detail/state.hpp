@@ -23,10 +23,6 @@ namespace ctsm::detail
 	{
 		using dummy_t = uint8_t; /* Type does not matter, uint8_t used to avoid wasting memory. */
 
-		template<auto>
-		friend
-		struct state_func_impl;
-
 		constexpr explicit state_t(const dummy_t &dummy) noexcept : id_dummy(&dummy) {}
 
 	public:

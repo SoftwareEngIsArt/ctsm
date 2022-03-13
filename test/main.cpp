@@ -60,5 +60,5 @@ TEST(ctsm_tests, behavior_test)
 	EXPECT_EQ(behavior(data), ctsm::state<test_state_1>);
 	EXPECT_EQ(data.ctr, 1);
 
-	EXPECT_THROW(behavior(), ctsm::bad_state_exception);
+	EXPECT_EQ(behavior(), ctsm::bad_state);
 }

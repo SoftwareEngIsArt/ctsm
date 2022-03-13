@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <exception>
-
 #include "state.hpp"
 
 namespace ctsm::detail

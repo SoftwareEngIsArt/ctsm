@@ -53,7 +53,7 @@ namespace ctsm::detail
 	constinit const state_t::dummy_t state_t::generator<S>::dummy = {};
 
 	/** Variable used to generate state identifier. */
-	template<auto S> requires state_func<S>
+	template<auto S>
 	constexpr state_t state = state_t::generator<S>{}();
 
 	struct bad_state_helper { constexpr static auto value = state_t{nullptr}; };

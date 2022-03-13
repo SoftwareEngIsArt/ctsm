@@ -12,28 +12,31 @@ int main(int argc, char **argv)
 	return RUN_ALL_TESTS();
 }
 
-struct state_data
+namespace
 {
-	bool next = false;
-	int ctr = 0;
-};
+	struct state_data
+	{
+		bool next = false;
+		int ctr = 0;
+	};
 
-constexpr ctsm::state_t test_state_1(state_data &);
-constexpr ctsm::state_t test_state_2(state_data &);
+	constexpr ctsm::state_t test_state_1(state_data &);
+	constexpr ctsm::state_t test_state_2(state_data &);
+
+	constexpr ctsm::state_t test_state_1(state_data &d)
+	{
+		d.ctr++;
+		return d.next ? ctsm::state<test_state_2> : ctsm::state<test_state_1>;
+	}
+	constexpr ctsm::state_t test_state_2(state_data &d)
+	{
+		d.next = !d.next;
+		return !d.next ? ctsm::state<test_state_1> : ctsm::state<test_state_2>;
+	}
+}
 
 template
 class ctsm::state_t::generator<test_state_1>;
-
-constexpr ctsm::state_t test_state_1(state_data &d)
-{
-	d.ctr++;
-	return d.next ? ctsm::state<test_state_2> : ctsm::state<test_state_1>;
-}
-constexpr ctsm::state_t test_state_2(state_data &d)
-{
-	d.next = !d.next;
-	return !d.next ? ctsm::state<test_state_1> : ctsm::state<test_state_2>;
-}
 
 TEST(ctsm_tests, state_test)
 {

@@ -58,6 +58,8 @@ obtained via `ctsm::behavior::state` member function.
 
 Note that if the current state of the behavior is not recognized (that is, state which is not part of this behavior) or
 if the current state cannot be invoked with the passed arguments, invoking a behavior will return `ctsm::bad_state`.
+After `ctsm::bad_state` was returned, the behavior is guaranteed to be invalid (calling `ctsm::behavior::state` will
+always return `ctsm::bad_state`).
 
 In case the behavior is in an invalid state (either from a state function returning an unrecognized or bad state, or
 from being initialized to an invalid state), it must be reset by either re-constructing it or

@@ -46,8 +46,9 @@ namespace ctsm::detail
 		/** Invokes the current state of the behavior using the passed arguments.
 		 * @param args Arguments passed to the state.
 		 * @return The next state to be executed, or `bad_state` if the behavior is in an unrecognized state
-		 * or the current state cannot be invoked with `args`.
-		 * @note All states must be invocable with the passed arguments. */
+		 * or the state cannot be invoked with `args`.
+		 * @note In case `bad_state` is returned, the behavior is guaranteed to be in an invalid state
+		 * (it will have the `bad_state` value as it's state). */
 		template<typename... Args>
 		constexpr state_t operator()(Args &&...args)
 		{
@@ -60,7 +61,10 @@ namespace ctsm::detail
 		/** Returns `state_t` value of the next state function to be executed. */
 		[[nodiscard]] constexpr state_t state() const noexcept { return next_state; }
 		/** Checks if the behavior is in a valid (recognized) state. */
-		[[nodiscard]] constexpr bool valid() const noexcept { return check_state(next_state); }
+		[[nodiscard]] constexpr bool valid() const noexcept
+		{
+			return next_state != bad_state && check_state(next_state);
+		}
 
 	private:
 		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>

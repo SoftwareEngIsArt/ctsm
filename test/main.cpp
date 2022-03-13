@@ -49,6 +49,7 @@ TEST(ctsm_tests, behavior_test)
 
 	auto behavior = test_behavior{ctsm::state<test_state_2>};
 	EXPECT_EQ(behavior.state(), ctsm::state<test_state_2>);
+	EXPECT_TRUE(behavior.valid());
 
 	state_data data = {};
 	EXPECT_EQ(behavior(data), ctsm::state<test_state_2>);
@@ -61,4 +62,9 @@ TEST(ctsm_tests, behavior_test)
 	EXPECT_EQ(data.ctr, 1);
 
 	EXPECT_EQ(behavior(), ctsm::bad_state);
+	EXPECT_FALSE(behavior.valid());
+
+	behavior.reset();
+	EXPECT_TRUE(behavior.valid());
+	EXPECT_EQ(behavior.state(), ctsm::state<test_state_1>);
 }

@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <utility>
+
 #include "state.hpp"
 
 namespace ctsm::detail
@@ -16,12 +19,22 @@ namespace ctsm::detail
 	class behavior
 	{
 		template<size_t I, size_t J, auto S, auto... Rest>
-		constexpr static auto get_state() noexcept
+		[[nodiscard]] constexpr static auto get_state() noexcept
 		{
 			if constexpr(I == J)
 				return S;
 			else
 				return get_state<I, J + 1, Rest...>();
+		}
+		template<size_t I = 0, auto S = get_state<I, 0, States...>()>
+		[[nodiscard]] constexpr static bool check_state(state_t state) noexcept
+		{
+			if (state == detail::state<S>)
+				return true;
+			else if constexpr(I + 1 < sizeof...(States))
+				return check_state<I + 1>(state);
+			else
+				return false;
 		}
 
 	public:
@@ -32,20 +45,26 @@ namespace ctsm::detail
 
 		/** Invokes the current state of the behavior using the passed arguments.
 		 * @param args Arguments passed to the state.
-		 * @return The next state to be executed, or `bad_state` if an unrecognized state was returned
+		 * @return The next state to be executed, or `bad_state` if the behavior is in an unrecognized state
 		 * or the current state cannot be invoked with `args`.
 		 * @note All states must be invocable with the passed arguments. */
 		template<typename... Args>
 		constexpr state_t operator()(Args &&...args)
 		{
-			return invoke_state(std::forward<Args>(args)...);
+			return next_state = invoke_state(std::forward<Args>(args)...);
 		}
+		/** Resets the behavior to the specified state.
+		 * @param new_state New state for the behavior. */
+		constexpr void reset(state_t new_state = default_state<States...>::value) noexcept { next_state = new_state; }
+
 		/** Returns `state_t` value of the next state function to be executed. */
 		[[nodiscard]] constexpr state_t state() const noexcept { return next_state; }
+		/** Checks if the behavior is in a valid (recognized) state. */
+		[[nodiscard]] constexpr bool valid() const noexcept { return check_state(next_state); }
 
 	private:
 		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>
-		constexpr state_t invoke_state(Args &&...args)
+		[[nodiscard]] constexpr state_t invoke_state(Args &&...args)
 		{
 			/* Only consider the state if it is invocable with the passed arguments. */
 			if constexpr(requires{ S(std::forward<Args>(args)...); })
@@ -53,7 +72,7 @@ namespace ctsm::detail
 				/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.
 				 * Runtime index generation cannot solve this since switch cases require constant expressions. */
 				if (next_state == detail::state<S>) [[likely]]
-					return next_state = S(std::forward<Args>(args)...);
+					return S(std::forward<Args>(args)...);
 			}
 
 			if constexpr(I + 1 < sizeof...(States))

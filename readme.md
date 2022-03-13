@@ -52,13 +52,16 @@ my_data data;
 behavior(data);
 ```
 
-Note that if a state function returns an unrecognized state (that is, state which is not part of this behavior) or if
-the current state of the behavior cannot be invoked with the passed arguments, an instance
-of `ctsm::bad_state_exception` will be thrown.
-
 The invocation operator (`operator()`) of `ctsm::behavior` returns an instance of `ctsm::state_t` indicating which state
 will be executed on next call to `operator()` (the current state). The current state of `ctsm::behavior` can also be
 obtained via `ctsm::behavior::state` member function.
+
+Note that if the current state of the behavior is not recognized (that is, state which is not part of this behavior) or
+if the current state cannot be invoked with the passed arguments, invoking a behavior will return `ctsm::bad_state`.
+
+In case the behavior is in an invalid state (either from a state function returning an unrecognized or bad state, or
+from being initialized to an invalid state), it must be re-set by either re-constructing it or
+using `ctsm::behavior::reset` member function.
 
 ```cpp
 ctsm::state_t current_state = behavior.state();

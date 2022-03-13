@@ -35,6 +35,18 @@ constexpr ctsm::state_t test_state_2(state_data &d)
 	return !d.next ? ctsm::state<test_state_1> : ctsm::state<test_state_2>;
 }
 
+TEST(ctsm_tests, state_test)
+{
+	static_assert(!std::is_default_constructible_v<ctsm::state_t>);
+
+	EXPECT_NE(ctsm::state<test_state_1>, ctsm::state<test_state_2>);
+	EXPECT_EQ(ctsm::state<test_state_1>, ctsm::state<test_state_1>);
+	EXPECT_NE(ctsm::state<test_state_1>, ctsm::bad_state);
+	EXPECT_EQ(ctsm::state<test_state_2>, ctsm::state<test_state_2>);
+	EXPECT_NE(ctsm::state<test_state_2>, ctsm::bad_state);
+	EXPECT_EQ(ctsm::bad_state, ctsm::bad_state);
+}
+
 TEST(ctsm_tests, behavior_test)
 {
 	using test_behavior = ctsm::behavior<test_state_1, test_state_2>;

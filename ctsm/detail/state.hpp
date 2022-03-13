@@ -58,7 +58,7 @@ namespace ctsm::detail
 
 	struct bad_state_helper { constexpr static auto value = state_t{nullptr}; };
 
-	/** `state_t` value used for invalid states. */
+	/** `state_t` value that is not identifying a state function. Used to indicate behavior state error. */
 	constexpr state_t bad_state = bad_state_helper::value;
 
 	template<auto S, auto...>

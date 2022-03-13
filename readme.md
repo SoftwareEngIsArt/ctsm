@@ -20,7 +20,8 @@ ctsm::state_t intermediate_2(const my_data &);
 using my_behavior = ctsm::behavior<initial, intermediate_1, intermediate_2>;
 ```
 
-Note that a state function must always return `ctsm::state_t`.
+Note that a state function must always return `ctsm::state_t`, and that the state functions passed as template
+parameters to `ctsm::behavior` must be unique.
 
 `ctsm::state_t` does not have any public (other than copy & move) constructors. In order to obtain an instance
 of `ctsm::state_t`, the `ctsm::state<State>` template constant is provided. It will generate a unique `ctsm::state_t`

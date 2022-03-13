@@ -15,7 +15,7 @@ namespace ctsm::detail
 	 * @tparam States Functions invoked as states of the behavior.
 	 * @note State functions must all be invocable from the same arguments & return a valid `state_t` value
 	 * (`state_t` value is considered valid if it is identifying one of the `States` state functions). */
-	template<auto... States> requires state_pack<States...>
+	template<auto... States> requires unique_state_pack<States...>
 	class behavior
 	{
 		template<size_t I, size_t J, auto S, auto... Rest>
@@ -36,6 +36,23 @@ namespace ctsm::detail
 			else
 				return false;
 		}
+		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>
+		[[nodiscard]] constexpr static state_t invoke_state(state_t state, Args &&...args)
+		{
+			/* Only consider the state if it is invocable with the passed arguments. */
+			if constexpr(requires{ S(std::forward<Args>(args)...); })
+			{
+				/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.
+				 * Runtime index generation cannot solve this since switch cases require constant expressions. */
+				if (state == detail::state<S>) [[likely]]
+					return S(std::forward<Args>(args)...);
+			}
+
+			if constexpr(I + 1 < sizeof...(States))
+				return invoke_state<I + 1>(state, std::forward<Args>(args)...);
+			else
+				return bad_state;
+		}
 
 	public:
 		/** Initializes the behavior with the default (first parameter of the pack) state. */
@@ -52,7 +69,7 @@ namespace ctsm::detail
 		template<typename... Args>
 		constexpr state_t operator()(Args &&...args)
 		{
-			return next_state = invoke_state(std::forward<Args>(args)...);
+			return next_state = invoke_state(next_state, std::forward<Args>(args)...);
 		}
 		/** Resets the behavior to the specified state.
 		 * @param new_state New state for the behavior. */
@@ -67,24 +84,6 @@ namespace ctsm::detail
 		}
 
 	private:
-		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>
-		[[nodiscard]] constexpr state_t invoke_state(Args &&...args)
-		{
-			/* Only consider the state if it is invocable with the passed arguments. */
-			if constexpr(requires{ S(std::forward<Args>(args)...); })
-			{
-				/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.
-				 * Runtime index generation cannot solve this since switch cases require constant expressions. */
-				if (next_state == detail::state<S>) [[likely]]
-					return S(std::forward<Args>(args)...);
-			}
-
-			if constexpr(I + 1 < sizeof...(States))
-				return invoke_state<I + 1>(std::forward<Args>(args)...);
-			else
-				return bad_state;
-		}
-
 		/** State to be executed on the next call to `operator()` */
 		state_t next_state;
 	};

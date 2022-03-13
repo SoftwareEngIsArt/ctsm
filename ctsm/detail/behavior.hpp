@@ -10,16 +10,6 @@
 
 namespace ctsm::detail
 {
-	/** @brief Exception thrown when behavior attempts to invoke an unrecognized state. */
-	class bad_state_exception final : std::exception
-	{
-	public:
-		bad_state_exception() noexcept = default;
-		~bad_state_exception() noexcept final = default;
-
-		[[nodiscard]] constexpr const char *what() const noexcept final { return "Unrecognised behavior state"; }
-	};
-
 	/** @brief Template behavior type.
 	 * @tparam States Functions invoked as states of the behavior.
 	 * @note State functions must all be invocable from the same arguments & return a valid `state_t` value
@@ -44,34 +34,34 @@ namespace ctsm::detail
 
 		/** Invokes the current state of the behavior using the passed arguments.
 		 * @param args Arguments passed to the state.
-		 * @return The next state to be executed.
-		 * @note All states must be invocable with the passed arguments.
-		 * @throw bad_state_exception In case a state function returned unrecognized `state_t` value
-		 * or the current state cannot be invoked with `args`. */
+		 * @return The next state to be executed, or `bad_state` if an unrecognized state was returned
+		 * or the current state cannot be invoked with `args`.
+		 * @note All states must be invocable with the passed arguments. */
 		template<typename... Args>
 		constexpr state_t operator()(Args &&...args)
 		{
-			return next_state = invoke_state(std::forward<Args>(args)...);
+			return invoke_state(std::forward<Args>(args)...);
 		}
 		/** Returns `state_t` value of the next state function to be executed. */
 		[[nodiscard]] constexpr state_t state() const noexcept { return next_state; }
 
 	private:
 		template<size_t I = 0, auto S = get_state<I, 0, States...>(), typename... Args>
-		constexpr state_t invoke_state(Args &&...args) const
+		constexpr state_t invoke_state(Args &&...args)
 		{
+			/* Only consider the state if it is invocable with the passed arguments. */
 			if constexpr(requires{ S(std::forward<Args>(args)...); })
 			{
 				/* Unfortunately, a switch cannot be used since `state_t` uses a pointer.
 				 * Runtime index generation cannot solve this since switch cases require constant expressions. */
-				if (detail::state<S> == next_state) [[likely]]
-					return S(std::forward<Args>(args)...);
+				if (next_state == detail::state<S>) [[likely]]
+					return next_state = S(std::forward<Args>(args)...);
 			}
 
 			if constexpr(I + 1 < sizeof...(States))
 				return invoke_state<I + 1>(std::forward<Args>(args)...);
 			else
-				throw bad_state_exception();
+				return bad_state;
 		}
 
 		/** State to be executed on the next call to `operator()` */

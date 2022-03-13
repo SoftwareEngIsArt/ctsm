@@ -17,12 +17,16 @@ namespace ctsm::detail
 	template<auto State>
 	concept state_func = state_func_impl<State>::value;
 
+	struct bad_state_helper;
+
 	/** @brief Type used to uniquely identify a state. */
 	class state_t
 	{
+		friend struct bad_state_helper;
+
 		using dummy_t = char; /* Type does not matter, char used to avoid wasting memory. */
 
-		constexpr explicit state_t(const dummy_t &dummy) noexcept : id_dummy(&dummy) {}
+		constexpr explicit state_t(const dummy_t *dummy) noexcept : id_dummy(dummy) {}
 
 	public:
 		template<auto State> requires state_func<State>
@@ -32,7 +36,7 @@ namespace ctsm::detail
 
 		public:
 			/** Returns an instance of `state_t` for the specific state. */
-			[[nodiscard]] constexpr state_t operator()() const noexcept { return state_t{dummy}; }
+			[[nodiscard]] constexpr state_t operator()() const noexcept { return state_t{&dummy}; }
 		};
 
 	public:
@@ -48,9 +52,15 @@ namespace ctsm::detail
 	template<auto S> requires state_func<S>
 	constinit const state_t::dummy_t state_t::generator<S>::dummy = {};
 
-	/** @brief Variable used to generate state identifier. */
+	/** Variable used to generate state identifier. */
 	template<auto S> requires state_func<S>
 	constexpr state_t state = state_t::generator<S>{}();
+
+	struct bad_state_helper { constexpr static auto value = state_t{nullptr}; };
+
+	/** `state_t` value used for invalid states. */
+	constexpr state_t bad_state = bad_state_helper::value;
+
 	template<auto S, auto...>
 	struct default_state { constexpr static auto value = state<S>; };
 

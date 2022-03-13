@@ -10,6 +10,7 @@ namespace ctsm
 {
 	using detail::state_t;
 	using detail::state;
-	using detail::bad_state_exception;
+	using detail::bad_state;
+
 	using detail::behavior;
 }

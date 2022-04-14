@@ -99,38 +99,44 @@ struct vacuum
 	{
 		bool is_clean = !data.rooms[data.current_room];
 
-		printf("Current room (%lu): %s\n", data.current_room, is_clean ? "clean" : "dirty");
+		printf("\t[INITIAL] Current room (%lu): %s\n", data.current_room, is_clean ? "clean" : "dirty");
 		if (!is_clean)
 			return ctsm::state<clean_state>;
 		else
-			return ctsm::state<move_next_state>;
+			return ctsm::state<find_dirty_neighbor_state>;
 	}
 	static ctsm::state_t clean_state(vacuum &data)
 	{
-		printf("Cleaning %lu...\n", data.current_room);
+		printf("\t[CLEAN] Cleaning %lu...\n", data.current_room);
 		data.rooms[data.current_room] = false;
-		return ctsm::state<move_next_state>;
+		if (data.min_clean > data.current_room)
+			data.min_clean = data.current_room;
+		return ctsm::state<find_dirty_neighbor_state>;
 	}
-	static ctsm::state_t move_next_state(vacuum &data)
+	static ctsm::state_t find_dirty_neighbor_state(vacuum &data)
 	{
-		/* Search for the next dirty room.
-		 * If current room is odd, start search at the previous room.
-		 * If no such room is found, we are at the final state. */
-
-		if (data.current_room % 2) --data.current_room;
+		/* Inspect neighbour rooms & clean them.
+		 * If the current room is <= minimum clean room number, and the current room is not 0,
+		 * search rooms on the left, otherwise, search rooms on the right. */
+		int direction;
+		if (data.current_room && data.current_room <= data.min_clean)
+			direction = -1;
+		else
+			direction = 1;
 
 		for (;;)
 		{
 			if (data.current_room == data.rooms.size())
 			{
-				printf("All clean\n");
+				printf("\t[SEARCH] All clean\n");
 				return ctsm::state<final_state>;
 			} else if (data.rooms[data.current_room])
 			{
-				printf("Next dirty: %lu\n", data.current_room);
+				printf("\t[SEARCH] Next dirty: %lu\n", data.current_room);
 				return ctsm::state<clean_state>;
-			}
-			++data.current_room;
+			} else if (!data.current_room)
+				direction = 1;
+			data.current_room += direction;
 		}
 	}
 
@@ -138,7 +144,6 @@ struct vacuum
 	{
 		/* Generate 2xn grid of rooms with random dirtiness. */
 		auto total_rooms = n * 2;
-		rooms.clear();
 		rooms.reserve(total_rooms);
 		while (total_rooms-- != 0)
 			rooms.emplace_back(!!(rand() % 2));
@@ -147,31 +152,50 @@ struct vacuum
 	{
 		for (std::size_t i = 0; i < rooms.size(); i += 2)
 		{
-			puts("+-----+-----+");
-			printf("| %03lu | %03lu |\n", i, i + 1);
-			printf("|  %c  |  %c  |\n", rooms[i] ? 'x' : ' ', rooms[i + 1] ? 'x' : ' ');
+			puts("\t+-----+-----+");
+			printf("\t| %03lu | %03lu |\n", i, i + 1);
+			printf("\t|  %c  |  %c  |\n", rooms[i] ? 'x' : ' ', rooms[i + 1] ? 'x' : ' ');
 		}
-		puts("+-----+-----+");
+		puts("\t+-----+-----+");
 	}
 
-	std::vector<bool> rooms = {};
-	std::size_t current_room = 0;
+	void reset()
+	{
+		rooms.clear();
+		current_room = 0;
+		min_clean = -1;
+	}
+
+	std::vector<bool> rooms;
+	std::size_t current_room;
+	std::size_t min_clean;
 };
 
 TEST(ctsm_tests, vacuum_cleaner)
 {
-	vacuum data;
-	data.generate_rooms(8); /* Generate 2x8 random rooms. */
-	data.print_rooms();
-	data.current_room = rand() % 2; /* Start in one of the first 2 rooms. */
-
 	ctsm::behavior<vacuum::initial_state,
 	               vacuum::clean_state,
-	               vacuum::move_next_state,
+	               vacuum::find_dirty_neighbor_state,
 	               vacuum::final_state> behavior;
+	vacuum data;
 
-	while (behavior.state() != ctsm::state<vacuum::final_state>)
-		behavior(data);
+	auto run_test = [&](int i)
+	{
+		printf("Test %d:\n", i);
 
-	EXPECT_TRUE(std::none_of(data.rooms.begin(), data.rooms.end(), [](auto b) { return b; }));
+		auto N = ((rand()) % 64) + 1;
+		data.reset();
+		data.generate_rooms(N); /* Generate 2xN random rooms. */
+		data.print_rooms();
+		data.current_room = rand() % N; /* Start in one of the first 2 rooms. */
+
+		behavior.reset();
+		while (behavior.state() != ctsm::state<vacuum::final_state>)
+			behavior(data);
+
+		EXPECT_TRUE(std::none_of(data.rooms.begin(), data.rooms.end(), [](auto b) { return b; }));
+	};
+
+	for (auto i = 0; i < 64; ++i)
+		run_test(i);
 }
